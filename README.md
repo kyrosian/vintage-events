@@ -22,7 +22,7 @@ Your published Events and Results sheets are already connected. Continue editing
 - Mark an event **Completed** to confirm its result. An empty Winner field selects the best recorded score according to Highest or Lowest; tied leaders share the win. To override this, enter the exact player or team name in Winner.
 - A winning team and its members each receive a win; anyone marked absent is excluded.
 - Keep completed event and result rows to retain the archive and all-time leaderboard. Use a new Event ID for each new event.
-- Leave Prize pool blank to hide the prize section.
+- Leave Prize pool blank to hide the prize section. For a completed event, you can also fill Recap title, Recap write-up, and Recap image URL in the Events tab; the recap appears when someone opens that event from Past Events. Use a public http(s) image URL for the image field.
 
 ## Files and future changes
 

@@ -3,6 +3,10 @@ export {normalise,key,parseCSV,escapeHtml,slug};
 const number=(value,label,optional=false)=>{if(!normalise(value)&&optional)return null;const n=Number(normalise(value).replace(/,/g,''));if(!Number.isFinite(n)||n<0)throw new Error(`${label} must be a number of zero or above.`);return n;};
 const headerMap=row=>new Map(row.map((name,i)=>[key(name),i]));
 const get=(row,headers,name)=>normalise(row[headers.get(key(name))]);
+function recapImage(value){
+  const raw=normalise(value);if(!raw)return{url:'',valid:true};
+  try{const url=new URL(raw);return{url:['http:','https:'].includes(url.protocol)?url.href:'',valid:['http:','https:'].includes(url.protocol)};}catch{return{url:'',valid:false};}
+}
 function rank(items,order='Highest',field='score'){
   const sorted=[...items].sort((a,b)=>a[field]===null&&b[field]!==null?1:b[field]===null&&a[field]!==null?-1:(a[field]===b[field]?0:(order==='Lowest'?a[field]-b[field]:b[field]-a[field]))||a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
   let position=null;
@@ -52,7 +56,9 @@ export function buildEvents(resultsRows,eventRows){
     const order=key(get(row,eh,'Score order'))||'highest';if(!['highest','lowest'].includes(order))throw new Error(`“${name}” must use Highest or Lowest score order.`);
     const duration=number(get(row,eh,'Duration (minutes)')||90,`${name}’s duration`);if(duration<=0)throw new Error(`“${name}” needs a duration greater than zero.`);
     const start=timestamp(get(row,eh,'Start (ISO)'),name);
-    return{id,name,index,format:rawFormat==='teams'?'Teams':'Individual',status:rawStatus,duration,start,end:start===null?null:start+duration*60_000,scoreLabel:get(row,eh,'Score label')||'Points',scoreOrder:order==='lowest'?'Lowest':'Highest',manualWinner:get(row,eh,'Winner'),prize:get(row,eh,'Prize pool'),prizeDetails:get(row,eh,'Prize details'),rules:get(row,eh,'Rules'),entries:[],competitors:[],warnings:[]};
+    const recap=recapImage(get(row,eh,'Recap image URL'));
+    const warnings=recap.valid?[]:['The recap image link for this event was ignored. Use a complete http(s) image URL.'];
+    return{id,name,index,format:rawFormat==='teams'?'Teams':'Individual',status:rawStatus,duration,start,end:start===null?null:start+duration*60_000,scoreLabel:get(row,eh,'Score label')||'Points',scoreOrder:order==='lowest'?'Lowest':'Highest',manualWinner:get(row,eh,'Winner'),prize:get(row,eh,'Prize pool'),prizeDetails:get(row,eh,'Prize details'),rules:get(row,eh,'Rules'),recapTitle:get(row,eh,'Recap title'),recapText:get(row,eh,'Recap write-up'),recapImage:recap.url,entries:[],competitors:[],warnings};
   });
   const eventMap=new Map(events.map(e=>[key(e.id),e]));const playerKeys=new Set();
   for(const row of resultsRows.slice(1)){
@@ -89,9 +95,9 @@ export function buildEvents(resultsRows,eventRows){
 export function allTime(events){
   const players=new Map(),teams=new Map();
   function credit(map,name,event,type){
-    const id=key(name);if(!map.has(id))map.set(id,{name,wins:0,individualWins:0,teamWins:0,eventIds:[],lastEvent:null});
+    const id=key(name);if(!map.has(id))map.set(id,{name,wins:0,points:0,individualWins:0,teamWins:0,eventIds:[],lastEvent:null});
     const record=map.get(id);if(record.eventIds.includes(event.id))return;
-    record.eventIds.push(event.id);record.wins++;record[type]++;
+    record.eventIds.push(event.id);record.wins++;record.points++;record[type]++;
     if(!record.lastEvent||(event.end??event.index)>(record.lastEvent.end??record.lastEvent.index))record.lastEvent={id:event.id,name:event.name,end:event.end,index:event.index};
   }
   for(const event of events){if(event.status!=='completed'||event.winnerState!=='confirmed')continue;

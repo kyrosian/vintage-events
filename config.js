@@ -1,5 +1,5 @@
 export const CONFIG = Object.freeze({
   title: 'Vintage Events',
-  resultsCsv: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxhJ70_LAPhH1kKYeoW6OC_xQxIEFa9O6tLi9v3xM9ZPfOqypirzAC9u-ZXxYuTQ/pub?gid=1118426010&single=true&output=csv',
-  eventsCsv: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxhJ70_LAPhH1kKYeoW6OC_xQxIEFa9O6tLi9v3xM9ZPfOqypirzAC9u-ZXxYuTQ/pub?gid=1512501165&single=true&output=csv',
+  resultsCsv: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9eZD4CXuVqtMHA5ZRAT6dmczdTypxnFo34qYBSlkQm4qvu9rFsWcG6UFfhdcPhA/pub?gid=1721192311&single=true&output=csv',
+  eventsCsv: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9eZD4CXuVqtMHA5ZRAT6dmczdTypxnFo34qYBSlkQm4qvu9rFsWcG6UFfhdcPhA/pub?gid=1185749452&single=true&output=csv',
 });

@@ -5,19 +5,22 @@ const fmt=value=>value===null||value===undefined?'—':Number(value).toLocaleStr
 const initials=name=>normalise(name).split(/\s+/).map(n=>n[0]).join('').slice(0,2).toUpperCase()||'—';
 const avatar=name=>`<span class="avatar" aria-hidden="true">${esc(initials(name))}</span>`;
 const views=['overview','standings','winners','leaderboard','history'];
-const titles={overview:'Events',standings:'Standings',winners:'Winners',leaderboard:'Leaderboard',history:'Past events'};
+const titles={overview:'Events',standings:'Event Standings',winners:'The Winners',leaderboard:'Leaderboard',history:'Past Events'};
 const state={model:{events:[],leaderboards:{players:[],teams:[]}},eventId:'',competitor:'',view:'overview',board:'players',loadedAt:null,source:'loading',loading:false,error:'',profile:null};
 const selectedEvent=()=>state.model.events.find(e=>e.id===state.eventId)??null;
+const isPastEvent=event=>Boolean(event)&&['completed','cancelled'].includes(event.status);
+const currentEvents=()=>state.model.events.filter(event=>!isPastEvent(event));
 const preference='vintage-events:selected-event';
-const emptyEvent=()=>({id:'',name:'No events yet',format:'Individual',duration:90,status:'draft',start:null,end:null,scoreLabel:'Points',scoreOrder:'Highest',entries:[],competitors:[],winners:[],winnerState:'unconfirmed',warnings:[],rules:'Add your first event in the Events sheet.',prize:'',prizeDetails:'',attendance:{confirmed:0,unknown:0,absent:0}});
+const emptyEvent=()=>({id:'',name:'No events yet',format:'Individual',duration:90,status:'draft',start:null,end:null,scoreLabel:'Points',scoreOrder:'Highest',entries:[],competitors:[],winners:[],winnerState:'unconfirmed',warnings:[],rules:'Add your first event in the Events sheet.',prize:'',prizeDetails:'',recapTitle:'',recapText:'',recapImage:'',attendance:{confirmed:0,unknown:0,absent:0}});
 function notify(message,error=false){$('notice').textContent=message;$('notice').hidden=!message;$('notice').classList.toggle('error',error);}
 function dateTime(time){return time===null?'To be scheduled':new Date(time).toLocaleString([],{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
 function dateOnly(time){return time===null?'Date not recorded':new Date(time).toLocaleDateString([],{day:'numeric',month:'short',year:'numeric'});}
 function selectDefault(){
-  if(state.model.events.some(e=>e.id===state.eventId))return;
+  const current=currentEvents();
+  if(current.some(e=>e.id===state.eventId))return;
   let saved='';try{saved=localStorage.getItem(preference)||'';}catch{}
   const requested=new URLSearchParams(location.search).get('event');
-  state.eventId=(state.model.events.find(e=>e.id===requested)??state.model.events.find(e=>e.id===saved)??state.model.events.find(e=>!['completed','cancelled'].includes(e.status))??state.model.events[0])?.id??'';
+  state.eventId=(current.find(e=>e.id===requested)??current.find(e=>e.id===saved)??current[0]??state.model.events[0])?.id??'';
 }
 function accept(model,loadedAt,source){state.model=model;state.loadedAt=loadedAt;state.source=source;state.error='';selectDefault();render();}
 function currentCompetitor(event){return event.competitors.find(c=>key(c.name)===key(state.competitor))??event.competitors[0]??null;}
@@ -27,6 +30,11 @@ function winnerHTML(event){
   return`<div class="winner-names">${event.winners.map(w=>`<div class="winner-name">${avatar(w.name)}<span>${esc(w.name)}</span></div>`).join('')}</div><p>${event.winners[0]?.score!==null?`${fmt(event.winners[0]?.score)} ${esc(event.scoreLabel.toLowerCase())} · `:''}${event.manualWinner?'Confirmed by the organiser':event.winners.length>1?'Shared event win':'Event winner'}</p>`;
 }
 function prizesHTML(event){return event.prize?`<div class="prize-section"><span class="eyebrow">PRIZE POOL</span><strong>${esc(event.prize)}</strong>${event.prizeDetails?`<p>${esc(event.prizeDetails)}</p>`:''}</div>`:'';}
+function recapHTML(event){
+  if(event.status!=='completed'||(!event.recapTitle&&!event.recapText&&!event.recapImage))return'';
+  const title=event.recapTitle||'Event recap';
+  return`<section class="panel recap-panel"><div class="section-heading"><div><span class="eyebrow">EVENT RECAP</span><h2>${esc(title)}</h2></div></div>${event.recapImage?`<img class="recap-image" src="${esc(event.recapImage)}" alt="${esc(title)}" loading="lazy" referrerpolicy="no-referrer">`:''}${event.recapText?`<p class="recap-copy">${esc(event.recapText)}</p>`:''}</section>`;
+}
 function standingsTable(event,competitors){
   if(!competitors.length)return`<div class="empty-state"><strong>${event.competitors.length?'No matching competitors':'The lineup is open'}</strong>${event.competitors.length?'Try another name.':'Participants will appear once they are added to this event.'}</div>`;
   return`<div class="table-wrap"><table><caption class="sr-only">${esc(event.name)} standings. Equal scores share a rank; blank scores are unranked.</caption><thead><tr><th scope="col">RANK</th><th scope="col">${event.format==='Teams'?'TEAM':'PLAYER'}</th>${event.format==='Teams'?'<th scope="col" class="numeric hide-small">MEMBERS</th>':''}<th scope="col" class="numeric">${esc(event.scoreLabel.toUpperCase())}</th></tr></thead><tbody>${competitors.map(c=>`<tr class="${key(c.name)===key(state.competitor)?'selected-row':''}"><td class="rank-cell">${c.rank===null?'—':String(c.rank).padStart(2,'0')}</td><td><button class="table-name" data-competitor="${esc(c.name)}">${avatar(c.name)}<span>${esc(c.name)}</span></button></td>${event.format==='Teams'?`<td class="numeric muted hide-small">${c.members.length}</td>`:''}<td class="numeric score-cell">${fmt(c.score)}</td></tr>`).join('')}</tbody></table></div>`;
@@ -57,6 +65,7 @@ function renderOverview(){
   $('timezone-note').textContent=`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll('_',' ')}.`;
   $('winner-heading').textContent=event.winners.length>1?'Joint winners':'Winner';$('winner-content').innerHTML=winnerHTML(event);
   $('prize-section').hidden=!event.prize;$('prize-value').textContent=event.prize;$('prize-details').textContent=event.prizeDetails;$('prize-details').hidden=!event.prizeDetails;
+  $('event-recap').innerHTML=recapHTML(event);
   $('lineup-eyebrow').textContent=event.format==='Teams'?'TEAM LINEUP':'COMPETITOR SPOTLIGHT';$('lineup-title').textContent=competitor?.name??'Participants to be announced';
   $('competitor-select').innerHTML=event.competitors.length?event.competitors.map(c=>`<option value="${esc(c.name)}" ${c.name===state.competitor?'selected':''}>${esc(c.name)}</option>`).join(''):'<option>No competitors</option>';
   $('competitor-select').disabled=!event.competitors.length;
@@ -73,18 +82,21 @@ function renderWinners(){
 }
 function renderLeaderboard(){
   const rows=state.model.leaderboards[state.board];
-  $('leaderboard-description').textContent=state.board==='players'?'Individual wins plus wins earned as a member of a winning team.':'Confirmed team wins across all completed events.';
-  $('leaderboard-table').innerHTML=rows.length?`<div class="table-wrap"><table><caption class="sr-only">All-time ${state.board} leaderboard by confirmed wins.</caption><thead><tr><th scope="col">RANK</th><th scope="col">${state.board==='players'?'PLAYER':'TEAM'}</th>${state.board==='players'?'<th scope="col" class="numeric hide-small">SOLO WINS</th><th scope="col" class="numeric hide-small">TEAM WINS</th>':''}<th scope="col" class="numeric">WINS</th><th scope="col" class="hide-small">RECENT WIN</th></tr></thead><tbody>${rows.map(row=>`<tr><td class="rank-cell">${String(row.rank).padStart(2,'0')}</td><td><span class="table-name">${avatar(row.name)}<span>${esc(row.name)}</span></span></td>${state.board==='players'?`<td class="numeric muted hide-small">${row.individualWins}</td><td class="numeric muted hide-small">${row.teamWins}</td>`:''}<td class="numeric score-cell">${row.wins}</td><td class="hide-small"><button class="table-name" data-event="${esc(row.lastEvent.id)}">${esc(row.lastEvent.name)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state"><strong>No confirmed wins yet.</strong>The leaderboard will grow as event results are confirmed.</div>';
-  $('leaderboard-note').textContent='Each completed event counts once. Joint winners each receive one win. Team wins also count for each listed member, excluding anyone marked absent.';
+  $('leaderboard-description').textContent=state.board==='players'?'Individual points plus points earned as a member of a winning team.':'Confirmed team points across all completed events.';
+  $('leaderboard-table').innerHTML=rows.length?`<div class="table-wrap"><table><caption class="sr-only">All-time ${state.board} leaderboard by confirmed points.</caption><thead><tr><th scope="col">RANK</th><th scope="col">${state.board==='players'?'PLAYER':'TEAM'}</th>${state.board==='players'?'<th scope="col" class="numeric hide-small">SOLO POINTS</th><th scope="col" class="numeric hide-small">TEAM POINTS</th>':''}<th scope="col" class="numeric">POINTS</th><th scope="col" class="hide-small">RECENT WIN</th></tr></thead><tbody>${rows.map(row=>`<tr><td class="rank-cell">${String(row.rank).padStart(2,'0')}</td><td><span class="table-name">${avatar(row.name)}<span>${esc(row.name)}</span></span></td>${state.board==='players'?`<td class="numeric muted hide-small">${row.individualWins}</td><td class="numeric muted hide-small">${row.teamWins}</td>`:''}<td class="numeric score-cell">${row.points}</td><td class="hide-small"><button class="table-name" data-event="${esc(row.lastEvent.id)}">${esc(row.lastEvent.name)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state"><strong>No confirmed points yet.</strong>The leaderboard will grow as event winners are confirmed.</div>';
+  $('leaderboard-note').textContent='Each confirmed winner receives 1 point per completed event. Joint winners each receive 1 point. Team wins also award 1 personal point to each listed member, excluding anyone marked absent.';
 }
 function renderHistory(){
   const past=state.model.events.filter(e=>['completed','cancelled'].includes(e.status)||phase(e).kind==='review').sort((a,b)=>(b.end??b.index)-(a.end??a.index));
   $('past-event-count').textContent=past.length;
-  $('past-events').innerHTML=past.length?`<div class="table-wrap"><table><caption class="sr-only">Past events, confirmed attendance, and results.</caption><thead><tr><th scope="col">EVENT</th><th scope="col" class="hide-small">DATE</th><th scope="col">ATTENDANCE</th><th scope="col">RESULT</th></tr></thead><tbody>${past.map(e=>`<tr><td><button class="table-name" data-event="${esc(e.id)}">${esc(e.name)}</button><div class="muted history-meta">${esc(e.format)} · ${fmt(e.duration)} min</div></td><td class="muted hide-small">${esc(dateOnly(e.start))}</td><td class="muted">${esc(attendanceLabel(e))}</td><td>${e.winners.length?e.winners.map(w=>esc(w.name)).join(', '):e.status==='cancelled'?'Cancelled':'Awaiting confirmation'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state"><strong>No past events yet.</strong>Completed events and their attendance will be kept here.</div>';
+  $('past-events').innerHTML=past.length?`<div class="table-wrap"><table><caption class="sr-only">Past Events, confirmed attendance, and results.</caption><thead><tr><th scope="col">EVENT</th><th scope="col" class="hide-small">DATE</th><th scope="col">ATTENDANCE</th><th scope="col">RESULT</th></tr></thead><tbody>${past.map(e=>`<tr><td><button class="table-name" data-event="${esc(e.id)}">${esc(e.name)}</button><div class="muted history-meta">${esc(e.format)} · ${fmt(e.duration)} min</div></td><td class="muted hide-small">${esc(dateOnly(e.start))}</td><td class="muted">${esc(attendanceLabel(e))}</td><td>${e.winners.length?e.winners.map(w=>esc(w.name)).join(', '):e.status==='cancelled'?'Cancelled':'Awaiting confirmation'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state"><strong>No Past Events yet.</strong>Completed events and their attendance will be kept here.</div>';
 }
 function render(){
-  $('event-select').innerHTML=state.model.events.length?state.model.events.map(e=>`<option value="${esc(e.id)}" ${e.id===state.eventId?'selected':''}>${esc(e.name)}</option>`).join(''):'<option>No events yet</option>';
-  $('event-select').disabled=!state.model.events.length;renderOverview();renderWinners();renderLeaderboard();renderHistory();
+  const current=currentEvents();
+  const viewingPast=isPastEvent(selectedEvent());
+  const pastPlaceholder=viewingPast?'<option value="" selected disabled>Viewing a past event</option>':'';
+  $('event-select').innerHTML=current.length?pastPlaceholder+current.map(e=>`<option value="${esc(e.id)}" ${!viewingPast&&e.id===state.eventId?'selected':''}>${esc(e.name)}</option>`).join(''):'<option>No current events</option>';
+  $('event-select').disabled=!current.length;renderOverview();renderWinners();renderLeaderboard();renderHistory();
   if(state.profile){const p=selectedEvent()?.entries.find(p=>key(p.name)===key(state.profile));if(p)renderParticipant(p);else closeParticipant();}
   renderStatus();
 }

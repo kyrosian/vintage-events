@@ -1,0 +1,100 @@
+{
+  "capturedAt": "2026-09-09T18:28:12.183544+00:00",
+  "events": [
+    [
+      "Event ID",
+      "Event name",
+      "Format",
+      "Status",
+      "Start (ISO)",
+      "Duration (minutes)",
+      "Score label",
+      "Score order",
+      "Winner",
+      "Prize pool",
+      "Prize details",
+      "Rules",
+      "Check"
+    ],
+    [
+      "event-001",
+      "Vintage clan event",
+      "Teams",
+      "Draft",
+      "",
+      "90.",
+      "Points",
+      "Highest",
+      "",
+      "",
+      "",
+      "",
+      "Ready"
+    ]
+  ],
+  "results": [
+    [
+      "Event ID",
+      "Player",
+      "Team",
+      "Score",
+      "Attended",
+      "Note",
+      "Check"
+    ],
+    [
+      "event-001",
+      "Kyro",
+      "Team 1",
+      "",
+      "Yes",
+      "",
+      "Ready"
+    ],
+    [
+      "event-001",
+      "Atkins",
+      "Team 1",
+      "",
+      "Yes",
+      "",
+      "Ready"
+    ],
+    [
+      "event-001",
+      "Ego",
+      "Team 1",
+      "",
+      "Yes",
+      "",
+      "Ready"
+    ],
+    [
+      "event-001",
+      "Bloodsportt",
+      "Team 1",
+      "",
+      "Yes",
+      "",
+      "Ready"
+    ],
+    [
+      "event-001",
+      "Really Based",
+      "Team 1",
+      "",
+      "Yes",
+      "",
+      "Ready"
+    ],
+    [
+      "event-001",
+      "Karl",
+      "Team 1",
+      "",
+      "Yes",
+      "",
+      "Ready"
+    ]
+  ]
+}

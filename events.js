@@ -88,6 +88,14 @@ export function buildEvents(resultsRows,eventRows){
         const top=event.competitors.find(c=>c.score!==null);if(top){event.winners=event.competitors.filter(c=>c.score===top.score);event.winnerState='confirmed';}
       }
     }
+    // A completed event may intentionally have no per-player scores: selecting
+    // Winner is enough to award the event point. Surface that point in the
+    // event standings and lineup while leaving every other competitor unranked.
+    if(event.status==='completed'&&event.winnerState==='confirmed'&&event.competitors.length&&event.competitors.every(c=>c.score===null)){
+      const winningNames=new Set(event.winners.map(w=>key(w.name)));
+      event.competitors=event.competitors.map(c=>winningNames.has(key(c.name))?{...c,score:1,rank:1}:c);
+      event.winners=event.winners.map(w=>event.competitors.find(c=>key(c.name)===key(w.name))??w);
+    }
   }
   return{events,legacy,leaderboards:allTime(events)};
 }

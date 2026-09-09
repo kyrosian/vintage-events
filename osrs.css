@@ -300,13 +300,13 @@ dialog::backdrop { background: #0d0b07c9; }
 /* Completed events can carry an optional write-up and image from the Events sheet. */
 .recap-panel { margin-top: 24px; border-top: 4px solid #9b7335; padding-bottom: 26px; }
 .recap-panel .section-heading { padding-bottom: 18px; }
-.recap-image { display: block; width: calc(100% - 52px); max-height: 430px; object-fit: cover; margin: 0 26px 22px; border: 1px solid #9c8055; box-shadow: 0 5px 0 rgba(38, 25, 14, .32); background: #32271b; }
+.recap-image { display: block; width: auto; max-width: min(calc(100% - 52px), 760px); height: auto; max-height: 360px; object-fit: contain; margin: 0 auto 22px; border: 1px solid #9c8055; box-shadow: 0 5px 0 rgba(38, 25, 14, .32); background: #32271b; }
 .recap-copy { padding: 0 26px; white-space: pre-wrap; color: var(--muted); font-family: var(--display); font-size: 1.15rem; line-height: 1.55; }
 @media (max-width: 680px) {
-  .recap-image { width: calc(100% - 40px); margin-left: 20px; margin-right: 20px; }
+  .recap-image { max-width: calc(100% - 40px); max-height: 420px; }
   .recap-copy { padding-left: 20px; padding-right: 20px; }
 }
 @media (max-width: 390px) {
-  .recap-image { width: calc(100% - 32px); margin-left: 16px; margin-right: 16px; }
+  .recap-image { max-width: calc(100% - 32px); max-height: 420px; }
   .recap-copy { padding-left: 16px; padding-right: 16px; }
 }
